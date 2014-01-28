@@ -7,7 +7,7 @@ if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
  * Description:  Provides a CoinPayments.net Payment Gateway.
  * Author: CoinPayments.net
  * Author URI: https://www.coinpayments.net/
- * Version: 1.0.0
+ * Version: 1.0.1
  */
 
 /**
@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
  *
  * @class 		WC_Coinpayments
  * @extends		WC_Gateway_Coinpayments
- * @version		1.0.0
+ * @version		1.0.1
  * @package		WooCommerce/Classes/Payment
  * @author 		CoinPayments.net based on PayPal module by WooThemes
  */
@@ -58,7 +58,7 @@ function coinpayments_gateway_load() {
 		global $woocommerce;
 
         $this->id           = 'coinpayments';
-        $this->icon         = apply_filters( 'woocommerce_coinpayments_icon', plugins_url().'/woocommerce-coinpayments/assets/images/icons/coinpayments.png' );
+        $this->icon         = apply_filters( 'woocommerce_coinpayments_icon', plugins_url().'/coinpayments-payment-gateway-for-woocommerce/assets/images/icons/coinpayments.png' );
         $this->has_fields   = false;
         $this->method_title = __( 'CoinPayments.net', 'woocommerce' );
         $this->ipn_url   = add_query_arg( 'wc-api', 'WC_Gateway_Coinpayments', home_url( '/' ) );
