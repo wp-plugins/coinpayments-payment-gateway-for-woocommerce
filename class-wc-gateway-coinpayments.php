@@ -7,7 +7,7 @@ if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
  * Description:  Provides a CoinPayments.net Payment Gateway.
  * Author: CoinPayments.net
  * Author URI: https://www.coinpayments.net/
- * Version: 1.0.1
+ * Version: 1.0.2
  */
 
 /**
@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
  *
  * @class 		WC_Coinpayments
  * @extends		WC_Gateway_Coinpayments
- * @version		1.0.1
+ * @version		1.0.2
  * @package		WooCommerce/Classes/Payment
  * @author 		CoinPayments.net based on PayPal module by WooThemes
  */
@@ -454,7 +454,7 @@ function coinpayments_gateway_load() {
 
         	$this->log->add( 'coinpayments', 'Order #'.$order->id.' payment status: ' . $posted['status_text'] );
 
-         	if ( $order->status != 'completed' ) {
+         	if ( $order->status != 'completed' && get_post_meta( $order->id, 'CoinPayments payment complete', true ) != 'Yes' ) {
          		// no need to update status if it's already done
             if ( ! empty( $posted['txn_id'] ) )
              	update_post_meta( $order->id, 'Transaction ID', $posted['txn_id'] );
@@ -467,14 +467,15 @@ function coinpayments_gateway_load() {
 
            	$order->add_order_note('CoinPayments.net Payment Status: '.$posted['status_text']);
 						if ($posted['status'] >= 0 && $posted['status'] < 100) {
-							//print "mark pending\n";
+							print "Marking pending\n";
 							$order->update_status('pending', 'CoinPayments.net Payment pending: '.$posted['status_text']);
 						} else if ($posted['status'] < 0) {
-							//print "mark cancelled\n";
+							print "Marking cancelled\n";
               $order->update_status('cancelled', 'CoinPayments.net Payment cancelled/timed out: '.$posted['status_text']);
 							mail( get_option( 'admin_email' ), sprintf( __( 'Payment for order %s cancelled/timed out', 'woocommerce' ), $order->get_order_number() ), $posted['status_text'] );
 						} else {
-							//print "mark complete\n";
+							print "Marking complete\n";
+							update_post_meta( $order->id, 'CoinPayments payment complete', 'Yes' );
              	$order->payment_complete();
 						}
 	        }
