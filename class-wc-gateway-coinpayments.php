@@ -7,7 +7,7 @@ if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
  * Description:  Provides a CoinPayments.net Payment Gateway.
  * Author: CoinPayments.net
  * Author URI: https://www.coinpayments.net/
- * Version: 1.0.2
+ * Version: 1.0.3
  */
 
 /**
@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
  *
  * @class 		WC_Coinpayments
  * @extends		WC_Gateway_Coinpayments
- * @version		1.0.2
+ * @version		1.0.3
  * @package		WooCommerce/Classes/Payment
  * @author 		CoinPayments.net based on PayPal module by WooThemes
  */
@@ -391,7 +391,7 @@ function coinpayments_gateway_load() {
 	    	$order = $this->get_coinpayments_order( $_POST );
 	    }
 				
-			if ($order) {
+			if ($order !== FALSE) {
 				if ($_POST['ipn_type'] == "button") {
 					if ($_POST['merchant'] == $this->merchant_id) {
 						if ($_POST['currency1'] == get_woocommerce_currency()) {
@@ -494,7 +494,7 @@ function coinpayments_gateway_load() {
 		@ob_clean();
 
 		if ( ! empty( $_POST ) && $this->check_ipn_request_is_valid() ) {
-			$this->successful_request($_POST );
+			$this->successful_request($_POST);
 		} else {
 			wp_die( "CoinPayments.net IPN Request Failure" );
  		}
@@ -508,7 +508,7 @@ function coinpayments_gateway_load() {
 	 * @return void
 	 */
 	function get_coinpayments_order( $posted ) {
-		$custom = maybe_unserialize( $posted['custom'] );
+		$custom = maybe_unserialize( stripslashes_deep($posted['custom']) );
 
     	// Backwards comp for IPN requests
     	if ( is_numeric( $custom ) ) {
@@ -531,10 +531,10 @@ function coinpayments_gateway_load() {
 
 		// Validate key
 		if ( $order->order_key !== $order_key ) {
-        	exit;
-        }
+			return FALSE;
+		}
 
-        return $order;
+		return $order;
 	}
 
 }
