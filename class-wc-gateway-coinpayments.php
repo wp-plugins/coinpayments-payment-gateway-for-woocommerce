@@ -7,7 +7,7 @@ if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
  * Description:  Provides a CoinPayments.net Payment Gateway.
  * Author: CoinPayments.net
  * Author URI: https://www.coinpayments.net/
- * Version: 1.0.3
+ * Version: 1.0.4
  */
 
 /**
@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
  *
  * @class 		WC_Coinpayments
  * @extends		WC_Gateway_Coinpayments
- * @version		1.0.3
+ * @version		1.0.4
  * @package		WooCommerce/Classes/Payment
  * @author 		CoinPayments.net based on PayPal module by WooThemes
  */
@@ -415,10 +415,10 @@ function coinpayments_gateway_load() {
 			}
 		}
 
-		$report = "AUTH User: |".$_SERVER['PHP_AUTH_USER']."|\n";
-		$report .= "AUTH User: |".trim($this->merchant_id)."|\n\n";
-		$report .= "AUTH Pass: |".$_SERVER['PHP_AUTH_PW']."|\n\n";
-		$report .= "AUTH Pass: |".trim($this->ipn_secret)."|\n\n";
+		$report = "AUTH User Passed: |".$_SERVER['PHP_AUTH_USER']."|\n";
+		$report .= "AUTH User Expected: |".trim($this->merchant_id)."|\n\n";
+		$report .= "AUTH Pass Passed: |".$_SERVER['PHP_AUTH_PW']."|\n\n";
+		$report .= "AUTH Pass Expected: |".trim($this->ipn_secret)."|\n\n";
 				
 		$report .= "Error Message: ".$error_msg."\n\n";
 				
@@ -466,17 +466,17 @@ function coinpayments_gateway_load() {
              	update_post_meta( $order->id, 'Payer email', $posted['email'] );
 
            	$order->add_order_note('CoinPayments.net Payment Status: '.$posted['status_text']);
-						if ($posted['status'] >= 0 && $posted['status'] < 100) {
-							print "Marking pending\n";
-							$order->update_status('pending', 'CoinPayments.net Payment pending: '.$posted['status_text']);
+						if ($posted['status'] >= 100 || $posted['status'] == 2) {
+							print "Marking complete\n";
+							update_post_meta( $order->id, 'CoinPayments payment complete', 'Yes' );
+             	$order->payment_complete();
 						} else if ($posted['status'] < 0) {
 							print "Marking cancelled\n";
               $order->update_status('cancelled', 'CoinPayments.net Payment cancelled/timed out: '.$posted['status_text']);
 							mail( get_option( 'admin_email' ), sprintf( __( 'Payment for order %s cancelled/timed out', 'woocommerce' ), $order->get_order_number() ), $posted['status_text'] );
-						} else {
-							print "Marking complete\n";
-							update_post_meta( $order->id, 'CoinPayments payment complete', 'Yes' );
-             	$order->payment_complete();
+            } else {
+							print "Marking pending\n";
+							$order->update_status('pending', 'CoinPayments.net Payment pending: '.$posted['status_text']);
 						}
 	        }
 	        die("IPN OK");
