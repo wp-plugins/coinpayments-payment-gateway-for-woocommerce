@@ -286,6 +286,7 @@ function coinpayments_gateway_load() {
 
 		$order = new WC_Order( $order_id );
 		if ( $order->status != 'completed' && get_post_meta( $order->id, 'CoinPayments payment complete', true ) != 'Yes' ) {
+			$order->update_status('on-hold', 'Customer is being redirected to CoinPayments...');
 			$order->update_status('pending', 'Customer is being redirected to CoinPayments...');
 		}
 
