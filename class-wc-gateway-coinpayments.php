@@ -7,7 +7,7 @@ if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
  * Description:  Provides a CoinPayments.net Payment Gateway.
  * Author: CoinPayments.net
  * Author URI: https://www.coinpayments.net/
- * Version: 1.0.4
+ * Version: 1.0.5
  */
 
 /**
@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
  *
  * @class 		WC_Coinpayments
  * @extends		WC_Gateway_Coinpayments
- * @version		1.0.4
+ * @version		1.0.5
  * @package		WooCommerce/Classes/Payment
  * @author 		CoinPayments.net based on PayPal module by WooThemes
  */
@@ -171,6 +171,12 @@ function coinpayments_gateway_load() {
 							'description' => __( 'Please enter your CoinPayments.net IPN Secret.', 'woocommerce' ),
 							'default' => '',
 						),
+			'send_shipping' => array(
+							'title' => __( 'Collect Shipping Info?', 'woocommerce' ),
+							'type' => 'checkbox',
+							'label' => __( 'Enable Shipping Information on Checkout page', 'woocommerce' ),
+							'default' => 'yes'
+						),						
 			'invoice_prefix' => array(
 							'title' => __( 'Invoice Prefix', 'woocommerce' ),
 							'type' => 'text',
@@ -230,15 +236,23 @@ function coinpayments_gateway_load() {
 				// Billing Address info
 				'first_name'			=> $order->billing_first_name,
 				'last_name'				=> $order->billing_last_name,
+				'email'					=> $order->billing_email,
+		);
+		
+		if ($this->send_shipping == 'yes') {
+			$coinpayments_args = array_merge($coinpayments_args, array(
+				'want_shipping' => 1,
 				'address1'				=> $order->billing_address_1,
 				'address2'				=> $order->billing_address_2,
 				'city'					=> $order->billing_city,
 				'state'					=> $order->billing_state,
 				'zip'					=> $order->billing_postcode,
 				'country'				=> $order->billing_country,
-				'email'					=> $order->billing_email,
 				'phone'					=> $order->billing_phone,
-		);
+			));
+		} else {
+			$coinpayments_args['want_shipping'] = 0;
+		}
 
 		if ( get_option( 'woocommerce_prices_include_tax' ) == 'yes' ) {
 			$coinpayments_args['item_name'] 	= sprintf( __( 'Order %s' , 'woocommerce'), $order->get_order_number() );
@@ -271,6 +285,9 @@ function coinpayments_gateway_load() {
 		global $woocommerce;
 
 		$order = new WC_Order( $order_id );
+		if ( $order->status != 'completed' && get_post_meta( $order->id, 'CoinPayments payment complete', true ) != 'Yes' ) {
+			$order->update_status('pending', 'Customer is being redirected to CoinPayments...');
+		}
 
 		$coinpayments_adr = "https://www.coinpayments.net/index.php";
 
@@ -338,12 +355,10 @@ function coinpayments_gateway_load() {
      * @access public
      * @return void
      */
-	function receipt_page( $order ) {
-
+	function receipt_page( $order ) {	
 		echo '<p>'.__( 'Thank you for your order, please click the button below to pay with CoinPayments.net.', 'woocommerce' ).'</p>';
 
 		echo $this->generate_coinpayments_form( $order );
-
 	}
 
 	/**
