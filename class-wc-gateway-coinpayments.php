@@ -7,7 +7,7 @@ if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
  * Description:  Provides a CoinPayments.net Payment Gateway.
  * Author: CoinPayments.net
  * Author URI: https://www.coinpayments.net/
- * Version: 1.0.5
+ * Version: 1.0.6
  */
 
 /**
@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
  *
  * @class 		WC_Coinpayments
  * @extends		WC_Gateway_Coinpayments
- * @version		1.0.5
+ * @version		1.0.6
  * @package		WooCommerce/Classes/Payment
  * @author 		CoinPayments.net based on PayPal module by WooThemes
  */
@@ -74,6 +74,7 @@ function coinpayments_gateway_load() {
 		$this->ipn_secret   = $this->get_option( 'ipn_secret' );
 		$this->send_shipping	= $this->get_option( 'send_shipping' );
 		$this->debug_email			= $this->get_option( 'debug_email' );
+		$this->allow_zero_confirm = $this->get_option( 'allow_zero_confirm' ) == 'yes' ? true : false;
 		$this->form_submission_method = $this->get_option( 'form_submission_method' ) == 'yes' ? true : false;
 		$this->invoice_prefix	= $this->get_option( 'invoice_prefix', 'WC-' );
 
@@ -171,12 +172,18 @@ function coinpayments_gateway_load() {
 							'description' => __( 'Please enter your CoinPayments.net IPN Secret.', 'woocommerce' ),
 							'default' => '',
 						),
+			'allow_zero_confirm' => array(
+							'title' => __( 'Enable 0-confirm payments?', 'woocommerce' ),
+							'type' => 'checkbox',
+							'label' => __( '* WARNING * If this is selected orders will be marked as paid as soon as your buyer\'s payment is detected, but before it is confirmed. This can be dangerous if the payment never confirms and is only recommended for digital downloads.', 'woocommerce' ),
+							'default' => ''
+						),		
 			'send_shipping' => array(
 							'title' => __( 'Collect Shipping Info?', 'woocommerce' ),
 							'type' => 'checkbox',
 							'label' => __( 'Enable Shipping Information on Checkout page', 'woocommerce' ),
 							'default' => 'yes'
-						),						
+						),		
 			'invoice_prefix' => array(
 							'title' => __( 'Invoice Prefix', 'woocommerce' ),
 							'type' => 'text',
@@ -469,6 +476,7 @@ function coinpayments_gateway_load() {
 			    $order = $this->get_coinpayments_order( $posted );
 
         	$this->log->add( 'coinpayments', 'Order #'.$order->id.' payment status: ' . $posted['status_text'] );
+         	$order->add_order_note('CoinPayments.net Payment Status: '.$posted['status_text']);
 
          	if ( $order->status != 'completed' && get_post_meta( $order->id, 'CoinPayments payment complete', true ) != 'Yes' ) {
          		// no need to update status if it's already done
@@ -481,8 +489,7 @@ function coinpayments_gateway_load() {
             if ( ! empty( $posted['email'] ) )
              	update_post_meta( $order->id, 'Payer email', $posted['email'] );
 
-           	$order->add_order_note('CoinPayments.net Payment Status: '.$posted['status_text']);
-						if ($posted['status'] >= 100 || $posted['status'] == 2) {
+						if ($posted['status'] >= 100 || $posted['status'] == 2 || ($this->allow_zero_confirm && $posted['status'] >= 0 && $posted['received_amount'] >= $posted['amount2'])) {
 							print "Marking complete\n";
 							update_post_meta( $order->id, 'CoinPayments payment complete', 'Yes' );
              	$order->payment_complete();
