@@ -3,8 +3,8 @@ Contributors: CoinPayments, woothemes, mikejolley, jameskoster, CoenJacobs
 Donate link: https://gocps.net/3ncyzcq3sy0ww1rxghleip1aky/
 Tags: bitcoin, litecoin, altcoins, altcoin, dogecoin, feathercoin, netcoin, frankos, digitalcoin, devcoin, earthcoin, anoncoin, fastcoin, quark, peercoin, store, sales, sell, shop, shopping, cart, checkout, e-commerce, commerce
 Requires at least: 3.7.0
-Tested up to: 3.8.0
-Stable tag: 1.0.6
+Tested up to: 4.1.0
+Stable tag: 1.0.7
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -23,6 +23,9 @@ This plugin implements a payment gateway for WooCommerce to let buyers pay with 
 1. Click "Save changes" and the gateway will be active.
 
 == Changelog ==
+
+= 1.0.7 =
+* Updated to support WooCommerce 2.3.0
 
 = 1.0.6 =
 * Adds support for 0-confirm payments (for digital downloads.)

@@ -7,7 +7,7 @@ if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
  * Description:  Provides a CoinPayments.net Payment Gateway.
  * Author: CoinPayments.net
  * Author URI: https://www.coinpayments.net/
- * Version: 1.0.6
+ * Version: 1.0.7
  */
 
 /**
@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
  *
  * @class 		WC_Coinpayments
  * @extends		WC_Gateway_Coinpayments
- * @version		1.0.6
+ * @version		1.0.7
  * @package		WooCommerce/Classes/Payment
  * @author 		CoinPayments.net based on PayPal module by WooThemes
  */
@@ -79,7 +79,7 @@ function coinpayments_gateway_load() {
 		$this->invoice_prefix	= $this->get_option( 'invoice_prefix', 'WC-' );
 
 		// Logs
-		$this->log = $woocommerce->logger();
+		$this->log = new WC_Logger();
 
 		// Actions
 		add_action( 'woocommerce_receipt_coinpayments', array( $this, 'receipt_page' ) );
@@ -230,12 +230,12 @@ function coinpayments_gateway_load() {
 				'allow_extra' 				=> 0,
 				'currency' 		=> get_woocommerce_currency(),
 				'reset' 				=> 1,
-				'success_url' 				=> add_query_arg( 'utm_nooverride', '1', $this->get_return_url( $order ) ),
+				'success_url' 				=> $this->get_return_url( $order ),
 				'cancel_url'			=> $order->get_cancel_order_url(),
 
 				// Order key + ID
-				'invoice'				=> $this->invoice_prefix . ltrim( $order->get_order_number(), '#' ),
-				'custom' 				=> serialize( array( $order_id, $order->order_key ) ),
+				'invoice'				=> $this->invoice_prefix . $order->get_order_number(),
+				'custom' 				=> serialize( array( $order->id, $order->order_key ) ),
 
 				// IPN
 				'ipn_url'			=> $this->ipn_url,
@@ -261,18 +261,18 @@ function coinpayments_gateway_load() {
 			$coinpayments_args['want_shipping'] = 0;
 		}
 
-		if ( get_option( 'woocommerce_prices_include_tax' ) == 'yes' ) {
+		if ( wc_tax_enabled() && wc_prices_include_tax() ) {
 			$coinpayments_args['item_name'] 	= sprintf( __( 'Order %s' , 'woocommerce'), $order->get_order_number() );
 			$coinpayments_args['quantity'] 		= 1;
 			$coinpayments_args['taxf'] 				= 0.00;
-			$coinpayments_args['amountf'] 		= number_format( $order->get_total() - $order->get_shipping() - $order->get_shipping_tax(), 8, '.', '' );
-			$coinpayments_args['shippingf']		= number_format( $order->get_shipping() + $order->get_shipping_tax() , 8, '.', '' );
+			$coinpayments_args['amountf'] 		= number_format( $order->get_total() - $order->get_total_shipping() - $order->get_shipping_tax(), 8, '.', '' );
+			$coinpayments_args['shippingf']		= number_format( $order->get_total_shipping() + $order->get_shipping_tax() , 8, '.', '' );
 		} else {
 			$coinpayments_args['item_name'] 	= sprintf( __( 'Order %s' , 'woocommerce'), $order->get_order_number() );
 			$coinpayments_args['quantity'] 		= 1;
 			$coinpayments_args['taxf']				= $order->get_total_tax();
-			$coinpayments_args['amountf'] 		= number_format( $order->get_total() - $order->get_shipping() - $order->get_total_tax(), 8, '.', '' );
-			$coinpayments_args['shippingf']		= number_format( $order->get_shipping(), 8, '.', '' );
+			$coinpayments_args['amountf'] 		= number_format( $order->get_total() - $order->get_total_shipping() - $order->get_total_tax(), 8, '.', '' );
+			$coinpayments_args['shippingf']		= number_format( $order->get_total_shipping(), 8, '.', '' );
 		}
 
 		$coinpayments_args = apply_filters( 'woocommerce_coinpayments_args', $coinpayments_args );
@@ -288,53 +288,18 @@ function coinpayments_gateway_load() {
      * @param mixed $order_id
      * @return string
      */
-    function generate_coinpayments_form( $order_id ) {
+    function generate_coinpayments_url($order) {
 		global $woocommerce;
 
-		$order = new WC_Order( $order_id );
 		if ( $order->status != 'completed' && get_post_meta( $order->id, 'CoinPayments payment complete', true ) != 'Yes' ) {
 			//$order->update_status('on-hold', 'Customer is being redirected to CoinPayments...');
 			$order->update_status('pending', 'Customer is being redirected to CoinPayments...');
 		}
 
-		$coinpayments_adr = "https://www.coinpayments.net/index.php";
-
+		$coinpayments_adr = "https://www.coinpayments.net/index.php?";
 		$coinpayments_args = $this->get_coinpayments_args( $order );
-
-		$coinpayments_args_array = array();
-
-		foreach ($coinpayments_args as $key => $value) {
-			$coinpayments_args_array[] = '<input type="hidden" name="'.esc_attr( $key ).'" value="'.esc_attr( $value ).'" />';
-		}
-
-		$woocommerce->add_inline_js( '
-			jQuery("body").block({
-					message: "' . esc_js( __( 'Thank you for your order. We are now redirecting you to CoinPayments.net to make payment.', 'woocommerce' ) ) . '",
-					baseZ: 99999,
-					overlayCSS:
-					{
-						background: "#fff",
-						opacity: 0.6
-					},
-					css: {
-				        padding:        "20px",
-				        zindex:         "9999999",
-				        textAlign:      "center",
-				        color:          "#555",
-				        border:         "3px solid #aaa",
-				        backgroundColor:"#fff",
-				        cursor:         "wait",
-				        lineHeight:		"24px",
-				    }
-				});
-			jQuery("#submit_coinpayments_payment_form").click();
-		' );
-
-		return '<form action="'.esc_url( $coinpayments_adr ).'" method="post" id="coinpayments_payment_form" target="_top">
-				' . implode( '', $coinpayments_args_array) . '
-				<input type="submit" class="button alt" id="submit_coinpayments_payment_form" value="' . __( 'Pay via CoinPayments.net', 'woocommerce' ) . '" /> <a class="button cancel" href="'.esc_url( $order->get_cancel_order_url() ).'">'.__( 'Cancel order &amp; restore cart', 'woocommerce' ).'</a>
-			</form>';
-
+		$coinpayments_adr .= http_build_query( $coinpayments_args, '', '&' );
+		return $coinpayments_adr;
 	}
 
 
@@ -347,11 +312,11 @@ function coinpayments_gateway_load() {
      */
 	function process_payment( $order_id ) {
 
-		$order = new WC_Order( $order_id );
+		$order          = wc_get_order( $order_id );
 
 		return array(
 				'result' 	=> 'success',
-				'redirect'	=> add_query_arg('order', $order->id, add_query_arg('key', $order->order_key, get_permalink(woocommerce_get_page_id('pay' ))))
+				'redirect'	=> $this->generate_coinpayments_url($order),
 		);
 
 	}
