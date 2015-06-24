@@ -4,7 +4,7 @@ Donate link: https://gocps.net/3ncyzcq3sy0ww1rxghleip1aky/
 Tags: bitcoin, litecoin, altcoins, altcoin, dogecoin, feathercoin, netcoin, peercoin, blackcoin, darkcoin, ripple, woocommerce
 Requires at least: 3.7.0
 Tested up to: 4.1.0
-Stable tag: 1.0.7
+Stable tag: 1.0.8
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -23,6 +23,9 @@ This plugin implements a payment gateway for WooCommerce to let buyers pay with 
 1. Click "Save changes" and the gateway will be active.
 
 == Changelog ==
+
+= 1.0.8 =
+* Changed zero-confirm to 1st-confirm for better reliability.
 
 = 1.0.7 =
 * Updated to support WooCommerce 2.3.0

@@ -7,7 +7,7 @@ if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
  * Description:  Provides a CoinPayments.net Payment Gateway.
  * Author: CoinPayments.net
  * Author URI: https://www.coinpayments.net/
- * Version: 1.0.7
+ * Version: 1.0.8
  */
 
 /**
@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
  *
  * @class 		WC_Coinpayments
  * @extends		WC_Gateway_Coinpayments
- * @version		1.0.7
+ * @version		1.0.8
  * @package		WooCommerce/Classes/Payment
  * @author 		CoinPayments.net based on PayPal module by WooThemes
  */
@@ -173,9 +173,9 @@ function coinpayments_gateway_load() {
 							'default' => '',
 						),
 			'allow_zero_confirm' => array(
-							'title' => __( 'Enable 0-confirm payments?', 'woocommerce' ),
+							'title' => __( 'Enable 1st-confirm payments?', 'woocommerce' ),
 							'type' => 'checkbox',
-							'label' => __( '* WARNING * If this is selected orders will be marked as paid as soon as your buyer\'s payment is detected, but before it is confirmed. This can be dangerous if the payment never confirms and is only recommended for digital downloads.', 'woocommerce' ),
+							'label' => __( '* WARNING * If this is selected orders will be marked as paid as soon as your buyer\'s payment is detected, but before it is fully confirmed. This can be dangerous if the payment never confirms and is only recommended for digital downloads.', 'woocommerce' ),
 							'default' => ''
 						),		
 			'send_shipping' => array(
@@ -454,7 +454,7 @@ function coinpayments_gateway_load() {
             if ( ! empty( $posted['email'] ) )
              	update_post_meta( $order->id, 'Payer email', $posted['email'] );
 
-						if ($posted['status'] >= 100 || $posted['status'] == 2 || ($this->allow_zero_confirm && $posted['status'] >= 0 && $posted['received_amount'] >= $posted['amount2'])) {
+						if ($posted['status'] >= 100 || $posted['status'] == 2 || ($this->allow_zero_confirm && $posted['status'] >= 0 && $posted['received_confirms'] > 0 && $posted['received_amount'] >= $posted['amount2'])) {
 							print "Marking complete\n";
 							update_post_meta( $order->id, 'CoinPayments payment complete', 'Yes' );
              	$order->payment_complete();
